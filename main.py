@@ -10,7 +10,7 @@ from bot.utils.config import TOKEN, ADMINS
 async def main():
     """Start the bot."""
     # Create the Application and pass it your bot's token.
-    application = Application.builder().token(TOKEN).job_queue(None).build()
+    application = Application.builder().token(TOKEN).build()
 
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", commands.start))
