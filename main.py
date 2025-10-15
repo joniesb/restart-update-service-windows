@@ -15,13 +15,22 @@ from bot.utils.config import TOKEN, ADMINS
 from bot.utils.helpers import check_channel_access
 
 
-async def main() -> None:
-    """Start the bot."""
-    # Use the standard Application.builder() for setup.
-    # The timezone bug is resolved by installing the `tzlocal` library.
-    application = Application.builder().token(TOKEN).build()
+async def post_init(application: Application) -> None:
+    """
+    This async function is called once the application is initialized.
+    It's the standard and safe way to run async code at startup.
+    """
+    await check_channel_access(application.bot)
 
-    # Register handlers
+
+def main() -> None:
+    """
+    Starts the bot using the correct, standard structure that avoids event loop conflicts.
+    """
+    # Using the post_init hook is the library's standard way to run async startup tasks.
+    application = Application.builder().token(TOKEN).post_init(post_init).build()
+
+    # Register all handlers
     application.add_handler(CommandHandler("start", commands.start))
     application.add_handler(CommandHandler(["menu", "admin"], admin.admin_menu_command))
     application.add_handler(CommandHandler("stats", commands.stats_command))
@@ -39,26 +48,22 @@ async def main() -> None:
         states={
             admin.ADD_BUTTON: [
                 MessageHandler(
-                    filters.TEXT & filters.User(user_id=ADMINS),
-                    admin.admin_add_button_step,
+                    filters.TEXT & filters.User(user_id=ADMINS), admin.admin_add_button_step
                 )
             ],
             admin.EDIT_CHOOSE: [
                 MessageHandler(
-                    filters.TEXT & filters.User(user_id=ADMINS),
-                    admin.admin_edit_button_choose,
+                    filters.TEXT & filters.User(user_id=ADMINS), admin.admin_edit_button_choose
                 )
             ],
             admin.EDIT_STEP: [
                 MessageHandler(
-                    filters.TEXT & filters.User(user_id=ADMINS),
-                    admin.admin_edit_button_step,
+                    filters.TEXT & filters.User(user_id=ADMINS), admin.admin_edit_button_step
                 )
             ],
             admin.REMOVE_STEP: [
                 MessageHandler(
-                    filters.TEXT & filters.User(user_id=ADMINS),
-                    admin.admin_remove_button_step,
+                    filters.TEXT & filters.User(user_id=ADMINS), admin.admin_remove_button_step
                 )
             ],
         },
@@ -69,12 +74,9 @@ async def main() -> None:
         MessageHandler(filters.TEXT & ~filters.COMMAND, user.handle_text_message)
     )
 
-    # Run pre-run checks
-    await check_channel_access(application.bot)
-
     # Run the bot until the user presses Ctrl-C
     print("Bot is running...")
-    await application.run_polling()
+    application.run_polling()
 
 
 if __name__ == "__main__":
@@ -82,11 +84,4 @@ if __name__ == "__main__":
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         level=logging.INFO,
     )
-
-    # This is a workaround for a known issue on Windows.
-    # See https://github.com/python-telegram-bot/python-telegram-bot/issues/3556
-    import platform
-    if platform.system() == "Windows":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-    asyncio.run(main())
+    main()
