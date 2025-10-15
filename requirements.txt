@@ -5,3 +5,5 @@ Pillow
 beautifulsoup4
 urllib3
 pytz
+apscheduler
+tzlocal

@@ -1,6 +1,21 @@
-import logging
+# MONKEY-PATCH FOR APSCHEDULER TIMEZONE BUG
+# This is the definitive fix for a bug in apscheduler that affects some Windows environments.
+# It must be placed at the very top of the file.
+try:
+    import apscheduler.util
+    import pytz
 
-from telegram import Bot
+    def get_localzone_fixed():
+        return pytz.utc
+
+    apscheduler.util.get_localzone = get_localzone_fixed
+except (ImportError, AttributeError):
+    pass
+# END MONKEY-PATCH
+
+import logging
+import asyncio
+
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -15,15 +30,10 @@ from bot.utils.config import TOKEN, ADMINS
 from bot.utils.helpers import check_channel_access
 
 
-def main() -> None:
-    """
-    This function sets up and runs the bot.
-    It avoids the Application.builder() to prevent a timezone-related bug
-    in the underlying apscheduler library on certain Windows environments.
-    """
-    # Manually create the Bot and Application objects
-    bot = Bot(TOKEN)
-    application = Application(bot=bot)
+async def main() -> None:
+    """Start the bot."""
+    # Use the standard Application.builder() for setup
+    application = Application.builder().token(TOKEN).build()
 
     # Register handlers
     application.add_handler(CommandHandler("start", commands.start))
@@ -73,13 +83,12 @@ def main() -> None:
         MessageHandler(filters.TEXT & ~filters.COMMAND, user.handle_text_message)
     )
 
-    # Run the bot until the user presses Ctrl-C
-    # We run the channel access check in a separate asyncio loop before starting the bot.
-    import asyncio
-    asyncio.run(check_channel_access(bot))
+    # Run pre-run checks
+    await check_channel_access(application.bot)
 
+    # Run the bot until the user presses Ctrl-C
     print("Bot is running...")
-    application.run_polling()
+    await application.run_polling()
 
 
 if __name__ == "__main__":
@@ -87,4 +96,4 @@ if __name__ == "__main__":
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         level=logging.INFO,
     )
-    main()
+    asyncio.run(main())
