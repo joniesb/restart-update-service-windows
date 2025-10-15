@@ -1,7 +1,8 @@
 import logging
 import os
+import pytz
 
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler, JobQueue
 
 from bot.handlers import admin, user, commands
 from bot.utils.config import TOKEN, ADMINS
@@ -10,7 +11,8 @@ from bot.utils.config import TOKEN, ADMINS
 async def main():
     """Start the bot."""
     # Create the Application and pass it your bot's token.
-    application = Application.builder().token(TOKEN).build()
+    job_queue = JobQueue(scheduler_configuration={'timezone': pytz.utc})
+    application = Application.builder().token(TOKEN).job_queue(job_queue).build()
 
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", commands.start))
