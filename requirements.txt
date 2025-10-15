@@ -1,9 +1,8 @@
-python-telegram-bot
+python-telegram-bot==21.1.1
 requests
 python-dotenv
 Pillow
 beautifulsoup4
 urllib3
 pytz
-apscheduler
-tzlocal
+apscheduler==3.10.4

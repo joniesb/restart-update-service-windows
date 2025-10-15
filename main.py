@@ -1,18 +1,3 @@
-# MONKEY-PATCH FOR APSCHEDULER TIMEZONE BUG
-# This is the definitive fix for a bug in apscheduler that affects some Windows environments.
-# It must be placed at the very top of the file.
-try:
-    import apscheduler.util
-    import pytz
-
-    def get_localzone_fixed():
-        return pytz.utc
-
-    apscheduler.util.get_localzone = get_localzone_fixed
-except (ImportError, AttributeError):
-    pass
-# END MONKEY-PATCH
-
 import logging
 import asyncio
 
