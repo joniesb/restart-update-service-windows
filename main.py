@@ -82,4 +82,11 @@ if __name__ == "__main__":
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         level=logging.INFO,
     )
+
+    # This is a workaround for a known issue on Windows.
+    # See https://github.com/python-telegram-bot/python-telegram-bot/issues/3556
+    import platform
+    if platform.system() == "Windows":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
     asyncio.run(main())
