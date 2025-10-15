@@ -17,7 +17,8 @@ from bot.utils.helpers import check_channel_access
 
 async def main() -> None:
     """Start the bot."""
-    # Use the standard Application.builder() for setup
+    # Use the standard Application.builder() for setup.
+    # The timezone bug is resolved by installing the `tzlocal` library.
     application = Application.builder().token(TOKEN).build()
 
     # Register handlers
