@@ -354,9 +354,8 @@ def build_caption(entry, include_tracklist=True):
     tracklist = entry.get("tracklist", []) or []
     tracks_total = entry.get("tracks_total", 0) or 0
 
-    # Prepare channel link from config
-    channel_link = f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}"
-    channel_tag = f'<a href="{channel_link}">✘FlyonSpace✘</a>'
+    # Prepare channel link with specific formatting
+    channel_tag = f'✘<a href="https://t.me/FlyonSpace">FlyonSpace</a>✘'
 
     is_album = len(tracklist) > 1 or tracks_total > 1
 

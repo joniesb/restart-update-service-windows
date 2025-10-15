@@ -52,24 +52,23 @@ def download_and_ensure_min_size(url, min_size=1000, save_dir=COVER_CACHE_DIR, p
                                  artist=None):
     os.makedirs(save_dir, exist_ok=True)
     session = get_session()
-    tried = []
 
-    # prefer Deezer HQ if requested
-    if prefer_hq and title:
+    # Step 1: Always and only search for a cover on Deezer if a title is provided.
+    deezer_cover_url = None
+    if title:
         try:
-            deezer_cover = deezer_get_hq_cover_by_query(title, artist)
-            if deezer_cover:
-                tried.append(deezer_cover)
-        except Exception:
-            pass
+            deezer_cover_url = deezer_get_hq_cover_by_query(title, artist)
+        except Exception as e:
+            logger.warning(f"An exception occurred during Deezer search: {e}")
 
-    if url:
-        tried.append(improve_cover_url(url))
-        tried.append(url)
+    # Step 2: If no cover is found on Deezer, return None immediately.
+    if not deezer_cover_url:
+        logger.info(f"No cover found on Deezer for '{title}'. Skipping cover processing.")
+        return None
 
-    for u in tried:
-        if not u:
-            continue
+    # Step 3: Process the image found exclusively from Deezer.
+    try:
+        u = improve_cover_url(deezer_cover_url)
         try:
             r = session.get(u, stream=True, timeout=15)
             r.raise_for_status()
