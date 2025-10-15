@@ -1,3 +1,18 @@
+# MONKEY-PATCH to fix a bug in apscheduler on Windows
+# This must be at the very top of the file, before telegram.ext is imported
+try:
+    from apscheduler.schedulers.base import BaseScheduler
+    import pytz
+
+    def get_localzone_monkey_patch():
+        return pytz.utc
+
+    BaseScheduler.get_localzone = get_localzone_monkey_patch
+except ImportError:
+    # If apscheduler is not installed, we don't need to patch anything
+    pass
+# END MONKEY-PATCH
+
 import logging
 import os
 
