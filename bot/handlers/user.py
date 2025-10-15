@@ -326,8 +326,13 @@ async def send_preview_for_entry(source_update, context: CallbackContext, uid, e
     if link_buttons:
         kb = InlineKeyboardMarkup([link_buttons])
 
-    cover_local = download_and_ensure_min_size(entry.get("cover_url"), title=entry.get("title"),
-                                             artist=entry.get("artist"))
+    # Prioritize Deezer for HQ covers
+    cover_local = download_and_ensure_min_size(
+        entry.get("cover_url"),
+        title=entry.get("title"),
+        artist=entry.get("artist"),
+        prefer_hq=True
+    )
 
     if cover_local:
         with open(cover_local, "rb") as photo_fp:
@@ -343,17 +348,20 @@ async def send_preview_for_entry(source_update, context: CallbackContext, uid, e
 
 
 def build_caption(entry, include_tracklist=True):
-    import html
     title = entry.get("title") or ""
     artist = entry.get("artist") or ""
     release_date = entry.get("release_date") or ""
     tracklist = entry.get("tracklist", []) or []
     tracks_total = entry.get("tracks_total", 0) or 0
 
+    # Prepare channel link from config
+    channel_link = f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}"
+    channel_tag = f'<a href="{channel_link}">✘FlyonSpace✘</a>'
+
     is_album = len(tracklist) > 1 or tracks_total > 1
 
     if not is_album:
-        return f"🎙 ▸ {html.escape(f'{artist} - {title}')}\n\n✘FlyonSpace✘"
+        return f"🎙 ▸ {html.escape(f'{artist} - {title}')}\n\n{channel_tag}"
 
     header = f"🎙 ▸ {html.escape(f'{artist} - {title}')}\n"
     header += f"💽 ▸ Tracks: {tracks_total}\n"
@@ -362,16 +370,19 @@ def build_caption(entry, include_tracklist=True):
 
     if include_tracklist and tracklist:
         lines = []
-        if isinstance(tracklist[0], list):  # multi-disc
+        # Check if the first element of the tracklist is a list (multi-disc)
+        if tracklist and isinstance(tracklist[0], list):
             for idx, disc in enumerate(tracklist, start=1):
                 lines.append(f"💿 CD {idx}:")
                 lines.extend(disc)
         else:
             lines.extend(tracklist)
-        tracklist_text = "\n".join(lines).strip()
-        body += f"Tracklist:\n{html.escape(tracklist_text)}\n"
 
-    body += "✘FlyonSpace✘"
+        tracklist_text = "\n".join(lines).strip()
+        # Wrap tracklist in a code block for better formatting
+        body += f"Tracklist:\n<code>{html.escape(tracklist_text)}</code>\n"
+
+    body += channel_tag
     return body
 
 
@@ -409,8 +420,14 @@ async def handle_confirm_to_channel_callback(query, context):
     caption = build_caption(entry)
     album_buttons, _ = build_link_buttons(entry)
     kb = InlineKeyboardMarkup([album_buttons]) if album_buttons else None
-    cover_local = download_and_ensure_min_size(entry.get("cover_url"), title=entry.get("title"),
-                                             artist=entry.get("artist"))
+
+    # Prioritize Deezer for HQ covers in the final post
+    cover_local = download_and_ensure_min_size(
+        entry.get("cover_url"),
+        title=entry.get("title"),
+        artist=entry.get("artist"),
+        prefer_hq=True
+    )
 
     try:
         if cover_local and len(caption) <= 1024:
