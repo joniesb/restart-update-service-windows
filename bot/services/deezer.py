@@ -67,31 +67,30 @@ def download_and_ensure_min_size(url, min_size=1000, save_dir=COVER_CACHE_DIR, p
         return None
 
     # Step 3: Process the image found exclusively from Deezer.
+    u = improve_cover_url(deezer_cover_url)
     try:
-        u = improve_cover_url(deezer_cover_url)
-        try:
-            r = session.get(u, stream=True, timeout=15)
-            r.raise_for_status()
-            img_bytes = r.content
-            if not img_bytes or len(img_bytes) < 1024:
-                raise ValueError("image content too small")
-            img = Image.open(BytesIO(img_bytes)).convert("RGB")
-        except Exception as e:
-            logger.warning(f"Failed to download/open image from {u}: {e}")
-            continue
-        try:
-            resample = getattr(Image, "LANCZOS", Image.BICUBIC)
+        r = session.get(u, stream=True, timeout=15)
+        r.raise_for_status()
+        img_bytes = r.content
+        if not img_bytes or len(img_bytes) < 1024:
+            raise ValueError("image content too small")
+        img = Image.open(BytesIO(img_bytes)).convert("RGB")
+    except Exception as e:
+        logger.warning(f"Failed to download or open image from {u}: {e}")
+        return None
+
+    try:
+        resample = getattr(Image, "LANCZOS", Image.BICUBIC)
+        if img.width < min_size or img.height < min_size:
+            img = ImageOps.fit(img, (min_size, min_size), resample)
+        else:
+            target = max(min_size, min(img.width, img.height))
+            img = ImageOps.fit(img, (target, target), resample)
             if img.width < min_size or img.height < min_size:
                 img = ImageOps.fit(img, (min_size, min_size), resample)
-            else:
-                target = max(min_size, min(img.width, img.height))
-                img = ImageOps.fit(img, (target, target), resample)
-                if img.width < min_size or img.height < min_size:
-                    img = ImageOps.fit(img, (min_size, min_size), resample)
-            filename = os.path.join(save_dir, f"cover_{int(time.time() * 1000)}.jpg")
-            img.save(filename, format="JPEG", quality=92)
-            return filename
-        except Exception as e:
-            logger.warning(f"Image processing failed for {u}: {e}")
-            continue
-    return None
+        filename = os.path.join(save_dir, f"cover_{int(time.time() * 1000)}.jpg")
+        img.save(filename, format="JPEG", quality=92)
+        return filename
+    except Exception as e:
+        logger.warning(f"Image processing failed for {u}: {e}")
+        return None
