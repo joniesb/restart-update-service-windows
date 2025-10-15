@@ -1,15 +1,18 @@
-# MONKEY-PATCH to fix a bug in apscheduler on Windows
-# This must be at the very top of the file, before telegram.ext is imported
+# MONKEY-PATCH FOR APSCHEDULER TIMEZONE BUG
+# This is a surgical fix for a bug in apscheduler that affects some Windows environments.
+# It must be placed at the very top of the file, before any other imports that might trigger it.
 try:
-    from apscheduler.schedulers.base import BaseScheduler
+    import apscheduler.util
     import pytz
 
-    def get_localzone_monkey_patch():
+    def get_localzone_fixed():
+        """A safe replacement for the problematic get_localzone function."""
         return pytz.utc
 
-    BaseScheduler.get_localzone = get_localzone_monkey_patch
+    # We override the original function with our safe version.
+    apscheduler.util.get_localzone = get_localzone_fixed
 except ImportError:
-    # If apscheduler is not installed, we don't need to patch anything
+    # If apscheduler is not installed, there's nothing to patch.
     pass
 # END MONKEY-PATCH
 
