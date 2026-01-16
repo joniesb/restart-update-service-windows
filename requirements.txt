@@ -1,0 +1,8 @@
+python-telegram-bot
+requests
+python-dotenv
+Pillow
+beautifulsoup4
+urllib3
+pytz
+tzlocal
